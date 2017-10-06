@@ -24,7 +24,7 @@ public class AppController {
 
    final String hostname = System.getenv().getOrDefault("HOSTNAME", "unknown");
 
-   @RequestMapping("/hello")
+   @RequestMapping("/")
    public String sayHello() {
        return "Hello from Spring Boot! " + new java.util.Date() + " on " + hostname + "\n";
    }
