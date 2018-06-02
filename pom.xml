@@ -61,13 +61,12 @@
                 <JAR_FILE>target/${project.build.finalName}.jar</JAR_FILE>
               </buildArgs>
             </configuration>
-            <executions>
+             <executions>
               <execution>
                 <id>default</id>
                 <phase>package</phase>
                 <goals>
                   <goal>build</goal>
-                  <goal>tag</goal>
                 </goals>
                 <configuration>
                   <repository>fabric8/${project.artifactId}</repository>
