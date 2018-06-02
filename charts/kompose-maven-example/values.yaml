@@ -3,8 +3,8 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: 10.111.239.249:5000/igdianov/kompose-maven-example
+  tag: 3.5.4
   pullPolicy: IfNotPresent
 service:
   name: kompose-maven-example
