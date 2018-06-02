@@ -19,6 +19,7 @@ pipeline {
         }
         steps {
           container('maven') {
+            sh "mvn fabric8:install"  
             sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
             sh "mvn install"
             sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
@@ -42,6 +43,7 @@ pipeline {
         steps {
           container('maven') {
             // ensure we're not on a detached head
+            sh "mvn fabric8:install"  
             sh "git checkout master"
             sh "git config --global credential.helper store"
             sh "jx step validate --min-jx-version 1.1.73"
