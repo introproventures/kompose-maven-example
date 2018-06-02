@@ -1,0 +1,5 @@
++ make tag
+sed -i -e "s/version:.*/version: 3.5.1/" Chart.yaml
+sed -i -e "s/repository: .*/repository: 10.111.239.249:5000\/igdianov\/kompose-maven-example/" values.yaml
+sed -i -e "s/tag: .*/tag: 3.5.1/" values.yaml
+git add --all
