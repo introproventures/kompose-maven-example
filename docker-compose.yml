@@ -2,8 +2,12 @@ version: "2"
 
 services:
   springboot-service:
-    image: springboot-docker-compose:latest
+    image: fabric8/@project.artifactId@:@project.version@
     labels:
      - "springboot-app"
     ports:
       - "8080:8080"
+    labels:
+      kompose.service.type: NodePort
+    environment:
+    - GET_HOSTS_FROM=dns
