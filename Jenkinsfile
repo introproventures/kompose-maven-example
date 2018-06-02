@@ -64,7 +64,7 @@ pipeline {
           container('maven') {
             sh 'mvn clean deploy'
 
-            sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml'
+            sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml -v debug'
 
             sh "jx step validate --min-jx-version 1.2.36"
             sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
