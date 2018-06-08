@@ -3,11 +3,11 @@
 # Declare variables to be passed into your templates.
 replicaCount: 1
 image:
-  repository: draft
-  tag: dev
+  repository: ${dockerfile.repository}
+  tag: ${dockerfile.tag}
   pullPolicy: IfNotPresent
 service:
-  name: kompose-maven-example
+  name: springboot-service
   type: ClusterIP
   externalPort: 80
   internalPort: 8080
@@ -20,7 +20,7 @@ resources:
   requests:
     cpu: 400m
     memory: 512Mi
-probePath: /actuator/health
+probePath: /health
 livenessProbe:
   initialDelaySeconds: 60
   periodSeconds: 10

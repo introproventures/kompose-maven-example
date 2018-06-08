@@ -2,12 +2,20 @@ version: "2"
 
 services:
   springboot-service:
-    image: fabric8/@project.artifactId@:@project.version@
+    image: '@dockerfile.repository@:@dockerfile.tag@'
     labels:
      - "springboot-app"
     ports:
-      - "8080:8080"
+    - "8080:8080"
     labels:
       kompose.service.type: NodePort
     environment:
     - GET_HOSTS_FROM=dns
+    
+  mongodb:
+    image: mongo:3.2
+    labels:
+      kompose.service.type: NodePort
+    ports:
+    - "27017:27017"
+    

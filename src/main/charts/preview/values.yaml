@@ -16,7 +16,8 @@ cleanup:
     helm.sh/hook-delete-policy: hook-succeeded
 
 preview:
-  image:
-    repository:
-    tag:
-    pullPolicy: IfNotPresent
+  springboot-service:
+    image:
+      repository: ${dockerfile.repository}
+      tag: ${dockerfile.tag}
+      pullPolicy: IfNotPresent

@@ -9,5 +9,6 @@ dependencies:
   repository: https://chartmuseum.build.cd.jenkins-x.io
   version: 2.3.56
 - alias: preview
-  name: kompose-maven-example
-  repository: file://../kompose-maven-example
+  name: ${project.artifactId}
+  repository: file://../${project.artifactId}
+  version: ${project.version}

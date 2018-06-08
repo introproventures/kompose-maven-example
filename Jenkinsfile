@@ -1,16 +1,18 @@
+def RELEASE_VERSION = "UNKNOWN"
+
 pipeline {
     agent {
       label "jenkins-maven"
     }
     environment {
-      ORG               = 'igdianov'
-      APP_NAME          = 'kompose-maven-example'
-      CHARTMUSEUM_CREDS = credentials('jenkins-x-chartmuseum')
+      ORG               = "igdianov"
+      APP_NAME          = "kompose-maven-example"
+      CHARTMUSEUM_CREDS = credentials("jenkins-x-chartmuseum")
     }
     stages {
-      stage('CI Build and push snapshot') {
+      stage("CI Build and push snapshot") {
         when {
-          branch 'PR-*'
+          branch "PR-*"
         }
         environment {
           PREVIEW_VERSION = "0.0.0-SNAPSHOT-$BRANCH_NAME-$BUILD_NUMBER"
@@ -18,82 +20,96 @@ pipeline {
           HELM_RELEASE = "$PREVIEW_NAMESPACE".toLowerCase()
         }
         steps {
-          container('maven') {
-            sh "curl -L https://github.com/kubernetes/kompose/releases/download/v1.13.0/kompose-linux-amd64 -o kompose"  
-            sh "chmod +x kompose"
-            sh "mv ./kompose /usr/local/bin/kompose"  
+          container("maven") {
+            sh "mvn dependency:resolve dependency:resolve-plugins"
+            sh "helm init --client-only"
+			sh "helm repo add chartmuseum http://jenkins-x-chartmuseum:8080"
+			sh "helm repo add chartmuseum https://chartmuseum.build.cd.jenkins-x.io"
+          
             sh "mvn versions:set -DnewVersion=$PREVIEW_VERSION"
-            sh "mvn install"
-            sh 'export VERSION=$PREVIEW_VERSION && skaffold run -f skaffold.yaml'
+            sh "mvn install dockerfile:push -Ddockerfile.repository=\$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME -Ddockerfile.tag=\$PREVIEW_VERSION"
 
             sh "jx step validate --min-jx-version 1.2.36"
             sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:$PREVIEW_VERSION"
-          }
-
-          dir ('./charts/preview') {
-           container('maven') {
-             sh "make preview"
-             sh "jx preview --app $APP_NAME --dir ../.."
-           }
+            
+            // make preview
+            sh "cd ./target/charts/preview && ls -a && jx preview --app \$APP_NAME --dir ../../.."
           }
         }
       }
-      stage('Build Release') {
+      stage("Build Release") {
         when {
-          branch 'master'
+          branch "master"
         }
         steps {
-          container('maven') {
+          container("maven") {
+            sh "mvn dependency:resolve dependency:resolve-plugins"
+            sh "helm init --client-only"
+			sh "helm repo add chartmuseum http://jenkins-x-chartmuseum:8080"
+			sh "helm repo add chartmuseum https://chartmuseum.build.cd.jenkins-x.io"
+
             // ensure we're not on a detached head
-            sh "curl -L https://github.com/kubernetes/kompose/releases/download/v1.13.0/kompose-linux-amd64 -o kompose"  
-            sh "chmod +x kompose"
-            sh "mv ./kompose /usr/local/bin/kompose"  
             sh "git checkout master"
             sh "git config --global credential.helper store"
             sh "jx step validate --min-jx-version 1.1.73"
             sh "jx step git credentials"
+            
             // so we can retrieve the version in later steps
             sh "echo \$(jx-release-version) > VERSION"
-            sh "mvn versions:set -DnewVersion=\$(cat VERSION)"
-          }
-          dir ('./charts/kompose-maven-example') {
-            container('maven') {
-              sh "make tag"
+            script {
+	            RELEASE_VERSION = sh(
+	            	script: "cat VERSION",
+	            	returnStdout: true
+	            ).trim()
             }
-          }
-          container('maven') {
-            sh 'mvn clean deploy'
-
-            sh 'export VERSION=`cat VERSION` && skaffold run -f skaffold.yaml -v debug'
+            echo "Set Release Version: ${RELEASE_VERSION}"
+            sh "mvn versions:set -DnewVersion=\$(RELEASE_VERSION)"
+            sh "mvn clean deploy dockerfile:push -Ddockerfile.repository=\$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME -Ddockerfile.tag=\$(RELEASE_VERSION)"
 
             sh "jx step validate --min-jx-version 1.2.36"
-            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:\$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(cat VERSION)"
+            sh "jx step post build --image \$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME:\$(RELEASE_VERSION)"
           }
         }
       }
-      stage('Promote to Environments') {
+      stage("Make Tag Release") {
         when {
-          branch 'master'
+          branch "master"
         }
         steps {
-          dir ('./charts/kompose-maven-example') {
-            container('maven') {
-              sh 'jx step changelog --version v\$(cat ../../VERSION)'
+            container("maven") {
+	            // make commit
+	            sh "git add --all"
+	            
+	            // if first release then no version update is performed
+	            sh 'git commit -m "release $(RELEASE_VERSION)" --allow-empty' 
+	            sh 'git tag -fa v$(RELEASE_VERSION) -m "Release version $(RELEASE_VERSION)'
+	            sh "git push origin v\$(RELEASE_VERSION)"
+            }
+        }
+      }
+      stage("Promote to Environments") {
+        when {
+          branch "master"
+        }
+        steps {
+            container("maven") {
+              sh "jx step changelog --version v\$(RELEASE_VERSION)"
 
               // release the helm chart
-              sh 'make release'
+              withCredentials([usernameColonPassword(credentialsId: "jenkins-x-chartmuseum", variable: "USERPASS")]) {
+                sh 'cd ./target/charts/kompose-maven-example && ls -a && curl --fail -u $USERPASS --data-binary "@$(APP_NAME)-$(RELEASE_VERSION).tgz" $(CHART_REPO)/api/charts'
+              }              
 
               // promote through all 'Auto' promotion Environments
-              sh 'jx promote -b --all-auto --timeout 1h --version \$(cat ../../VERSION)'
+              sh "jx promote -b --all-auto --timeout 1h --version \$(RELEASE_VERSION)"
             }
-          }
         }
       }
     }
     post {
-        always {
-            cleanWs()
-        }
+        //always {
+        //    cleanWs()
+        //}
         failure {
             input """Pipeline failed. 
 We will keep the build pod around to help you diagnose any failures. 

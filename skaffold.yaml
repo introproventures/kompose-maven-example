@@ -12,6 +12,7 @@ build:
 deploy:
   kubectl:
     manifests:
+    - ./target/fabric8/*
 profiles:
 - name: dev
   build:
