@@ -100,7 +100,7 @@ pipeline {
 
               // release the helm chart
               withCredentials([usernameColonPassword(credentialsId: "jenkins-x-chartmuseum", variable: "USERPASS")]) {
-                sh "export TAG=\$(cat VERSION) && cd ./target/charts/$APP_NAME && ls -a && curl --fail -u $USERPASS --data-binary \"@$APP_NAME-\$TAG.tgz\" \$CHART_REPO/api/charts"
+                sh "export TAG=\$(cat VERSION) && cd ./target/helm/repo && ls -a && curl --fail -u $USERPASS --data-binary \"@$APP_NAME-\$TAG.tgz\" \$CHART_REPO/api/charts"
               }              
 
               // promote through all 'Auto' promotion Environments
