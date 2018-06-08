@@ -1,5 +1,3 @@
-def RELEASE_VERSION = "UNKNOWN"
-
 pipeline {
     agent {
       label "jenkins-maven"
@@ -8,6 +6,7 @@ pipeline {
       ORG               = "igdianov"
       APP_NAME          = "kompose-maven-example"
       CHARTMUSEUM_CREDS = credentials("jenkins-x-chartmuseum")
+      RELEASE_VERSION   = "UNKNOWN"
     }
     stages {
       stage("CI Build and push snapshot") {
@@ -57,12 +56,12 @@ pipeline {
             // so we can retrieve the version in later steps
             sh "echo \$(jx-release-version) > VERSION"
             script {
-	            RELEASE_VERSION = sh(
+	            env.RELEASE_VERSION = sh(
 	            	script: "cat VERSION",
 	            	returnStdout: true
 	            ).trim()
             }
-            echo "Set Release Version: ${RELEASE_VERSION}"
+            echo "Set Release Version: \$(RELEASE_VERSION)"
             sh "mvn versions:set -DnewVersion=\$(RELEASE_VERSION)"
             sh "mvn clean deploy dockerfile:push -Ddockerfile.repository=\$JENKINS_X_DOCKER_REGISTRY_SERVICE_HOST:$JENKINS_X_DOCKER_REGISTRY_SERVICE_PORT/$ORG/$APP_NAME -Ddockerfile.tag=\$(RELEASE_VERSION)"
 
@@ -107,9 +106,9 @@ pipeline {
       }
     }
     post {
-        //always {
-        //    cleanWs()
-        //}
+        success {
+            cleanWs()
+        }
         failure {
             input """Pipeline failed. 
 We will keep the build pod around to help you diagnose any failures. 
