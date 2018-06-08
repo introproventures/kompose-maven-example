@@ -17,7 +17,7 @@
 
     <artifactId>springboot-docker-compose</artifactId>
     <groupId>io.fabric8</groupId>
-    <version>3.5.7</version>
+    <version>3.5</version>
     <packaging>jar</packaging>
 
     <name>Fabric8 Maven :: Sample :: Springboot Docker compose</name>
