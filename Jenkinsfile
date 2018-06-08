@@ -71,8 +71,8 @@ pipeline {
 	            sh "git add --all"
 	            
 	            // if first release then no version update is performed
-	            sh "git commit -m 'release \$(cat VERSION)' --allow-empty"
-	            sh "git tag -fa v\$(cat VERSION) -m 'Release version \$(cat VERSION)'"
+	            sh "git commit -m \"release \$(cat VERSION)\" --allow-empty"
+	            sh "git tag -fa v\$(cat VERSION) -m \"Release version \$(cat VERSION)\""
 	            sh "git push origin v\$(cat VERSION)"
             }
         }
@@ -100,7 +100,7 @@ pipeline {
 
               // release the helm chart
               withCredentials([usernameColonPassword(credentialsId: "jenkins-x-chartmuseum", variable: "USERPASS")]) {
-                sh "export TAG=\$(cat VERSION) && cd ./target/charts/$APP_NAME && ls -a && curl --fail -u $USERPASS --data-binary '@$APP_NAME-\$TAG.tgz' \$(CHART_REPO)/api/charts"
+                sh "export TAG=\$(cat VERSION) && cd ./target/charts/$APP_NAME && ls -a && curl --fail -u $USERPASS --data-binary \"@$APP_NAME-\$TAG.tgz\" \$CHART_REPO/api/charts"
               }              
 
               // promote through all 'Auto' promotion Environments
