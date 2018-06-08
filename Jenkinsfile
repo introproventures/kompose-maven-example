@@ -1,18 +1,19 @@
 pipeline {
-    agent {
-      label "jenkins-maven"
-    }
-    environment {
-      ORG               = "igdianov"
-      APP_NAME          = "kompose-maven-example"
-      CHARTMUSEUM_CREDS = credentials("jenkins-x-chartmuseum")
-    }
+	agent {
+		label "jenkins-maven"
+	}
+	environment {
+		ORG               = "igdianov"
+		APP_NAME          = "kompose-maven-example"
+		CHARTMUSEUM_CREDS = credentials("jenkins-x-chartmuseum")
+		CHART_REPO 		= "http://jenkins-x-chartmuseum:8080"
+	}
     stages {
       stage("Init") {
         steps {
           container("maven") {
             sh "helm init --client-only"
-			sh "helm repo add chartmuseum http://jenkins-x-chartmuseum:8080"
+			sh "helm repo add chartmuseum $CHART_REPO"
 			sh "helm repo add chartmuseum https://chartmuseum.build.cd.jenkins-x.io"
 
             sh "mvn dependency:resolve dependency:resolve-plugins"
